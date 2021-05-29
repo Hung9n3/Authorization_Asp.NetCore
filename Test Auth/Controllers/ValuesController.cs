@@ -46,6 +46,22 @@ namespace Test_Auth.Controllers
             return Ok();
         }
         [HttpPost]
+        public async Task<IActionResult> CreateClaim(Claims claim)
+        {
+            await _context.Claims.AddAsync(claim);
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+        [HttpPost]
+        public async Task<IActionResult> ManageUserClaim(UserClaimModel userClaim)
+        {
+            Claims claim = await _context.Claims.FindAsync(userClaim.claimId);
+            Claim Claim = new Claim(claim.Type, claim.Value);
+            User user = await _userManager.FindByIdAsync(userClaim.userId);
+            await _userManager.AddClaimAsync(user, Claim);
+            return Ok();
+        }
+        [HttpPost]
         public async Task<IActionResult> CreateUser(ApplicationUserModel userModel)
         {
             var applicationUser = new User()
@@ -69,15 +85,19 @@ namespace Test_Auth.Controllers
         {
             var user = await _userManager.FindByNameAsync(loginModel.UserName);
             IList<string> role = await _userManager.GetRolesAsync(user);
+            IList<Claim> Claims = await _userManager.GetClaimsAsync(user);
             if (user != null && await _userManager.CheckPasswordAsync(user, loginModel.Password))
             {
                 List<Claim> claims = new List<Claim> {
                     new Claim("UserId", user.Id.ToString()),
-                    new Claim("OcChoType", "Dat"),
                 };
                 foreach (string r in role)
                 {
                     claims.Add(new Claim(ClaimTypes.Role, r));
+                };
+                foreach (Claim c in Claims)
+                {
+                    claims.Add(c);
                 };
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
@@ -102,6 +122,13 @@ namespace Test_Auth.Controllers
         {
             ICollection<Role> roles = await _roleManager.Roles.ToListAsync();
             return Ok(roles);
+        }
+        [HttpGet]
+        [Authorize(Policy = "GetClaim")]
+        public async Task<IActionResult> GetClaim()
+        {
+            ICollection<Claims> claims = await _context.Claims.ToListAsync();
+            return Ok(claims);
         }
     }
 }

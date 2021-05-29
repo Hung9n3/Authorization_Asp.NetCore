@@ -110,6 +110,7 @@ namespace Test_Auth
                 options.AddPolicy("StudentOnly", policy => policy.RequireRole("Student"));
                 
             });
+            services.AddAuthorization(option => option.AddPolicy("GetClaim", policy => policy.RequireClaim("isGetClaim", "true"))) ;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
